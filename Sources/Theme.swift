@@ -278,6 +278,6 @@ enum Fmt {
         let t = Int(s.rounded())
         return String(format: "%d:%02d", t / 60, t % 60)
     }
-    static func delta(_ s: TimeInterval) -> String { (s >= 0 ? "+" : "-") + clock(s) }
+    static func delta(_ s: TimeInterval) -> String { (s >= 0 ? "+" : "\u{2212}") + clock(s) }
     static func day(_ d: Date) -> String { let f = DateFormatter(); f.dateFormat = "EEE d MMM yyyy"; return f.string(from: d) }
 }

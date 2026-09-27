@@ -137,7 +137,7 @@ struct GelRow: View {
                 .frame(width: 58)
             Text("Gel + water at \(Fmt.clock(at))").font(.body(13, .bold)).foregroundStyle(Track.sky)
             Spacer()
-            Text(String(format: "%@ %.1f", unit.short, pos)).font(.mono(12)).foregroundStyle(Track.sky.opacity(0.8)).padding(.trailing, 14)
+            Text(String(format: "%@ %.1f", unit.name, pos)).font(.mono(12)).foregroundStyle(Track.sky.opacity(0.8)).padding(.trailing, 14)
         }
         .frame(height: 32)
         .background(Track.sky.opacity(0.08))
@@ -145,23 +145,28 @@ struct GelRow: View {
     }
 }
 
-/// Pace per split as bars: taller is faster.
+/// Pace per split around a centre line: green bars up are faster than average, red bars down are slower.
 struct PaceProfile: View {
     let splits: [Split]
     let avg: TimeInterval
     var body: some View {
-        let dev = splits.map { avg - $0.pace }
-        let m = max(4, dev.map(abs).max() ?? 4)
+        let m = max(4, splits.map { abs(avg - $0.pace) }.max() ?? 4)
         GeometryReader { g in
-            HStack(alignment: .bottom, spacing: max(1, g.size.width / CGFloat(max(1, splits.count)) * 0.2)) {
+            let n = CGFloat(max(1, splits.count))
+            let gap = max(1, g.size.width / n * 0.22)
+            let w = (g.size.width - gap * (n - 1)) / n
+            let mid = g.size.height / 2
+            ZStack(alignment: .topLeading) {
+                Rectangle().fill(Track.ink.opacity(0.25)).frame(width: g.size.width, height: 1).offset(y: mid)
                 ForEach(splits) { s in
                     let d = avg - s.pace
-                    RoundedRectangle(cornerRadius: 2)
+                    let h = max(2, CGFloat(abs(d) / m) * (mid - 2))
+                    RoundedRectangle(cornerRadius: min(3, w / 3))
                         .fill(d > 0.5 ? Track.ahead : (d < -0.5 ? Track.tartan : Track.ink2))
-                        .frame(height: max(3, g.size.height * (0.5 + CGFloat(d / m) * 0.5)))
+                        .frame(width: w, height: h)
+                        .offset(x: CGFloat(s.id) * (w + gap), y: d >= 0 ? mid - h : mid)
                 }
             }
-            .frame(maxHeight: .infinity, alignment: .bottom)
         }
     }
 }
@@ -192,7 +197,7 @@ struct StrategySheet: View {
                     HStack {
                         Text("Start").font(.body(11, .bold)).foregroundStyle(Track.dim)
                         Spacer()
-                        Text("Faster ↑  ·  Slower ↓").font(.body(11, .bold)).foregroundStyle(Track.dim)
+                        Text("Faster above the line · slower below").font(.body(11, .bold)).foregroundStyle(Track.dim)
                         Spacer()
                         Text("Finish").font(.body(11, .bold)).foregroundStyle(Track.dim)
                     }

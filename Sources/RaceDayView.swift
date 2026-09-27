@@ -99,6 +99,8 @@ struct RaceDayView: View {
                 .transition(.scale.combined(with: .opacity))
             }
             Spacer(minLength: 0)
+            CourseStrip(splits: splits, laps: run.laps.map { $0.timeIntervalSince(run.start) }, elapsed: elapsed, unit: plan.unit)
+            Spacer(minLength: 0)
             if let next {
                 let togo = run.start.addingTimeInterval(next.at).timeIntervalSince(now)
                 VStack(spacing: 6) {
@@ -136,5 +138,57 @@ struct RaceDayView: View {
             }
         }
         .animation(.spring(response: 0.4), value: done)
+    }
+}
+
+/// The course as one lane: the pacer (where the plan says you are) and you (from your last marker).
+struct CourseStrip: View {
+    let splits: [Split]
+    let laps: [TimeInterval]
+    let elapsed: TimeInterval
+    let unit: Unit
+    var body: some View {
+        let total = max(0.01, splits.reduce(0) { $0 + $1.length })
+        let pacer = min(total, Pace.position(splits, at: elapsed))
+        // You: the last marker you passed, then moving on at the plan's pace for the next split.
+        let doneUnits = splits.prefix(laps.count).reduce(0) { $0 + $1.length }
+        let since = elapsed - (laps.last ?? 0)
+        let nextPace = laps.count < splits.count ? splits[laps.count].pace : 1
+        let you = min(total, doneUnits + max(0, since) / nextPace)
+        VStack(spacing: 8) {
+            GeometryReader { g in
+                let W = g.size.width
+                ZStack(alignment: .leading) {
+                    Tartan().clipShape(Capsule())
+                    Capsule().fill(.white.opacity(0.85)).frame(height: 2).padding(.horizontal, 10)
+                    ForEach(1..<max(2, splits.count), id: \.self) { i in
+                        Rectangle().fill(.white.opacity(0.35)).frame(width: 1.5, height: 14)
+                            .offset(x: W * CGFloat(splits.prefix(i).reduce(0) { $0 + $1.length } / total))
+                    }
+                    marker("PACER", Color.white, x: W * CGFloat(pacer / total)).offset(y: -18)
+                    marker("YOU", Track.led, x: W * CGFloat(you / total)).offset(y: 18)
+                }
+            }
+            .frame(height: 30)
+            HStack {
+                Text("START").font(.system(size: 10, weight: .heavy)).tracking(1.2)
+                Spacer()
+                Text(String(format: "%.1f of %.1f ", you, total) + unit.short).font(.mono(12, .bold))
+                Spacer()
+                Text("FINISH").font(.system(size: 10, weight: .heavy)).tracking(1.2)
+            }
+            .foregroundStyle(.white.opacity(0.55))
+            .padding(.top, 14)
+        }
+        .padding(.vertical, 20)
+    }
+
+    func marker(_ label: String, _ c: Color, x: CGFloat) -> some View {
+        VStack(spacing: 2) {
+            if label == "PACER" { Text(label).font(.system(size: 8.5, weight: .heavy)).foregroundStyle(c) }
+            Circle().fill(c).frame(width: 14, height: 14).overlay(Circle().strokeBorder(.black, lineWidth: 2))
+            if label == "YOU" { Text(label).font(.system(size: 8.5, weight: .heavy)).foregroundStyle(c) }
+        }
+        .offset(x: x - 7)
     }
 }

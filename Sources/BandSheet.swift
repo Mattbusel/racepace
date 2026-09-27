@@ -37,6 +37,15 @@ struct BandSheet: View {
                         }
                     }
                 }
+                if let card = ShareCard.image(plan: p) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        LaneLabel("Goal card")
+                        Image(uiImage: card).resizable().scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: .black.opacity(0.18), radius: 14, y: 8)
+                    }
+                    .padding(.top, 10)
+                }
             }
             .padding(.horizontal, 20).padding(.bottom, 40)
         }
@@ -65,7 +74,7 @@ struct PaceBand: View {
             ForEach(splits) { s in
                 let gel = gels.contains { $0 > s.at - s.time && $0 <= s.at }
                 HStack(spacing: 2) {
-                    Text(s.label).font(.system(size: 8.5, weight: .black)).italic().foregroundStyle(Track.tartan).frame(width: 20, alignment: .leading)
+                    Text(s.label).font(.system(size: 8.5, weight: .black)).italic().foregroundStyle(Track.tartan).lineLimit(1).minimumScaleFactor(0.7).frame(width: 26, alignment: .leading)
                     if gel { Image(systemName: "drop.fill").font(.system(size: 6.5)).foregroundStyle(Track.sky) }
                     Spacer(minLength: 0)
                     Text(Fmt.clock(s.at)).font(.system(size: 9.5, weight: .bold, design: .monospaced)).foregroundStyle(Track.ink)
